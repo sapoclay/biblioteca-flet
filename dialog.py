@@ -20,7 +20,7 @@ def mostrar_dialogo_nuevo_libro(page: ft.Page, titulo: str, ruta: str, categoria
     # Botón de cancelar
     cancelar_btn = ft.ElevatedButton(
         text="Cancelar",
-        on_click=lambda _: cerrar_dialogo(),
+        on_click=lambda _: cerrar_dialogo(page),
         width=200  # Ancho del botón
     )
     

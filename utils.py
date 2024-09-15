@@ -167,3 +167,36 @@ def configurar_eliminar_libro_evento(libro, eliminar_libro_click_event):
 def abrir_pdf(e):
     url = e.control.data
     webbrowser.open(url)
+    
+# Salir de la aplicación
+def handle_window_event(page, confirm_dialog):
+    def _handle_window_event(e):
+        if e.data == "close":
+            page.open(confirm_dialog)
+    return _handle_window_event
+
+def create_confirm_dialog(page, on_yes):
+    def yes_click(e):
+        on_yes()  # Ejecutar la acción de "Sí" proporcionada
+
+    def no_click(e):
+        page.close(confirm_dialog)  # Cerrar el diálogo de confirmación
+
+    confirm_dialog = ft.AlertDialog(
+        modal=True,
+        title=ft.Text("Por favor confirma"),
+        content=ft.Text("¿Estás seguro de que deseas salir de la aplicación?"),
+        actions=[
+            ft.ElevatedButton("Sí", on_click=yes_click),
+            ft.OutlinedButton("No", on_click=no_click),
+        ],
+        actions_alignment=ft.MainAxisAlignment.END,
+    )
+    return confirm_dialog
+
+def salir_app(page):
+    def on_exit():
+        page.window.destroy()  # Cerrar la ventana de forma forzada
+
+    confirm_dialog = create_confirm_dialog(page, on_exit)
+    page.open(confirm_dialog)

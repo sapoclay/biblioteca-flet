@@ -1,1 +1,4 @@
 flet
+pystray
+Pillow
+Tk

@@ -1,18 +1,17 @@
 import flet as ft
 import sqlite3
 from pathlib import Path
-from tkinter import Tk
-from tkinter.filedialog import askdirectory
 from database import (crear_tablas, guardar_libro, guardar_favorito, 
                       get_categorias_from_db, guardar_cambios_libro, cargar_datos,
                       actualizar_categoria_libro_individual, agregar_categoria, eliminar_libro,
                       conectar_db)
 from models import Libro
 from utils import (actualizar_lista_libros, mostrar_mensaje_error, 
-                   abrir_libro, buscar_libro, cerrar_dialogo, aplicar_categoria_a_libros,actualizar_lista_libros)
+                   abrir_libro, buscar_libro, cerrar_dialogo, aplicar_categoria_a_libros,
+                   handle_window_event, create_confirm_dialog, salir_app)
 from themes import toggle_tema
 from dialog import (mostrar_dialogo_nuevo_libro, mostrar_dialogo_seleccionar_categoria, 
-                    manejar_cambio_categoria,procesar_archivo_dialog, mostrar_dialogo_url)
+                    manejar_cambio_categoria, procesar_archivo_dialog, mostrar_dialogo_url)
 
 # Aplicación de Biblioteca Digital
 def main(page: ft.Page):
@@ -37,15 +36,11 @@ def main(page: ft.Page):
     # Establecer tema inicial (oscuro)
     page.theme_mode = ft.ThemeMode.DARK
     
-    
     # Función para alternar entre tema claro y oscuro
     def alternar_tema(e):
         nonlocal tema_oscuro
         tema_oscuro = toggle_tema(page, tema_oscuro)
     
-        
-   
-
     # Función para guardar el nuevo libro
     def guardar_nuevo_libro(titulo, categoria, ruta):
         nuevo_libro = Libro(titulo, categoria, ruta)
@@ -112,63 +107,121 @@ def main(page: ft.Page):
         dialogo_editar.open = True
         page.update()
 
-
-
     # Función para mostrar solo los libros favoritos
     def mostrar_solo_favoritos(e):
         nonlocal mostrar_favoritos
         mostrar_favoritos = not mostrar_favoritos
         actualizar_lista_libros(page, lista_libros, libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
 
-    # Función para cargar libros desde una carpeta
-    def cargar_libros_carpeta(e):
-        Tk().withdraw()  # No mostrar la ventana principal de Tkinter
-        carpeta = askdirectory(title="Seleccionar carpeta de libros")
-        if carpeta:
-            mostrar_dialogo_seleccionar_categoria(page, carpeta, libros, lista_libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
+    # Función para procesar los archivos seleccionados
+    def procesar_archivo(e: ft.FilePickerResultEvent):
+        if e.files:  # Verifica si se seleccionaron archivos
+            for archivo in e.files:
+                ruta = archivo.path
+                if ruta.lower().endswith('.pdf'):
+                    titulo = Path(ruta).stem
+                    mostrar_dialogo_nuevo_libro(page, titulo, ruta, "", guardar_nuevo_libro)
+        else:
+            print("No se seleccionaron archivos")
 
-    
+    def procesar_carpeta(e: ft.FilePickerResultEvent):
+        if e.path:  # Verifica si se seleccionó una carpeta
+            carpeta = Path(e.path)
+            # Procesa todos los archivos PDF en la carpeta
+            for archivo in carpeta.glob('*.pdf'):
+                titulo = archivo.stem
+                print(f"Procesando archivo: {archivo}")  # Añadir un log para ver si se están procesando todos los archivos
+                mostrar_dialogo_seleccionar_categoria(page, carpeta, libros, lista_libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
 
-    # Agrega la función procesar_archivo en main.py
-    def procesar_archivo(e):
-        for archivo in e.files:
-            ruta = archivo.path
-            if ruta.lower().endswith('.pdf'):
-                titulo = Path(ruta).stem
-                mostrar_dialogo_nuevo_libro(page, titulo, ruta, "", guardar_nuevo_libro)
 
 
-        
-
-    # Crear un FilePicker y añadirlo a la página
+    # Crear un FilePicker para seleccionar archivos
     archivo_pdf = ft.FilePicker(on_result=procesar_archivo)
     page.overlay.append(archivo_pdf)
 
+    # Crear un FilePicker para seleccionar una carpeta
+    file_picker_carpeta = ft.FilePicker(on_result=procesar_carpeta)
+    page.overlay.append(file_picker_carpeta)
+
+    # Función para cargar libros desde una carpeta
+    def cargar_libros_carpeta(e):
+        # Abre el diálogo para seleccionar una carpeta
+        file_picker_carpeta.get_directory_path()
+
     # Elementos de la interfaz
     barra_busqueda = ft.TextField(
-            label="Buscar libro (Título o Categoría)...",
-            on_change=lambda e: buscar_libro(page, lista_libros, libros, favoritos, mostrar_favoritos, e.control.value, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
-        )    
+        label="Buscar libro (Título o Categoría)...",
+        on_change=lambda e: buscar_libro(page, lista_libros, libros, favoritos, mostrar_favoritos, e.control.value, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
+    )    
     lista_libros = ft.Column()  # Usamos Column aquí
     boton_cargar = ft.FloatingActionButton(icon=ft.icons.ADD, on_click=lambda _: archivo_pdf.pick_files(), tooltip="Añadir nuevo libro")
     boton_cargar_carpeta = ft.FloatingActionButton(icon=ft.icons.FOLDER, on_click=cargar_libros_carpeta, tooltip="Cargar libros desde carpeta")
     btn_add_url = ft.FloatingActionButton(
-            icon=ft.icons.ADD_LINK,
-            on_click=lambda e: mostrar_dialogo_url(
-                page,
-                lista_libros,                 # Debes definir esta variable en el contexto correcto
-                libros,                       # Debes definir esta variable en el contexto correcto
-                favoritos,                    # Debes definir esta variable en el contexto correcto
-                mostrar_favoritos,            # Debes definir esta variable en el contexto correcto
-                abrir_libro,                  # Debes definir esta variable en el contexto correcto
-                toggle_favorito,              # Debes definir esta variable en el contexto correcto
-                eliminar_libro_click_event,   # Debes definir esta variable en el contexto correcto
-                editar_libro                  # Debes definir esta variable en el contexto correcto
-            ),
-            tooltip="Cargar libros desde URL"
-        )    
+        icon=ft.icons.ADD_LINK,
+        on_click=lambda e: mostrar_dialogo_url(
+            page,
+            lista_libros,                 # Debes definir esta variable en el contexto correcto
+            libros,                       # Debes definir esta variable en el contexto correcto
+            favoritos,                    # Debes definir esta variable en el contexto correcto
+            mostrar_favoritos,            # Debes definir esta variable en el contexto correcto
+            abrir_libro,                  # Debes definir esta variable en el contexto correcto
+            toggle_favorito,              # Debes definir esta variable en el contexto correcto
+            eliminar_libro_click_event,   # Debes definir esta variable en el contexto correcto
+            editar_libro                  # Debes definir esta variable en el contexto correcto
+        ),
+        tooltip="Cargar libros desde URL"
+    )    
     boton_favoritos = ft.IconButton(icon=ft.icons.STAR, on_click=mostrar_solo_favoritos, selected_icon=ft.icons.STAR_BORDER, tooltip="Mostrar solo favoritos")
     boton_tema = ft.IconButton(icon=ft.icons.DARK_MODE, on_click=alternar_tema, tooltip="Alternar tema claro/oscuro")
+    
+    # Crear el menú
+    menu = ft.PopupMenuButton(
+        items=[
+            ft.PopupMenuItem(text="Salir", on_click=lambda _: salir_app(page))
+        ]
+    )
+
+    # Crear un diálogo de confirmación para manejar el cierre
+    def on_confirm_exit():
+        page.window.destroy()
+
+    # Aquí pasamos los argumentos correctos
+    confirm_dialog = create_confirm_dialog(page, on_confirm_exit)
+
+    # Prevenir el cierre automático y manejar el evento de cierre
+    page.window.prevent_close = True
+    page.window.on_event = handle_window_event(page, confirm_dialog)
+
+    # Estructura de la página
+    page.appbar = ft.AppBar(
+        title=ft.Text("Biblioteca Digital"),
+        actions=[menu]
+    )
+    
+    # Crear encabezados con espacio adicional
+    encabezados = ft.Row(
+        controls=[
+            ft.Container(
+                content=ft.Text("Libros", size=16, weight=ft.FontWeight.BOLD),
+                padding=ft.Padding(left=20, top=0, right=0, bottom=0),  # Agregar padding completo
+                alignment=ft.alignment.center_left,
+                expand=True
+            ),
+            ft.Container(
+                content=ft.Text("Categorías", size=16, weight=ft.FontWeight.BOLD),
+                alignment=ft.alignment.center,
+                expand=True
+            ),
+            ft.Container(
+                content=ft.Text("Acciones", size=16, weight=ft.FontWeight.BOLD),
+                padding=ft.Padding(left=0, top=0, right=30, bottom=0),  # Agregar padding completo
+                alignment=ft.alignment.center_right,
+                expand=True
+            ),
+        ],
+        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,  # Espacio entre controles
+        expand=True
+    )
     
     # Estructura de la página
     page.add(
@@ -176,6 +229,7 @@ def main(page: ft.Page):
         ft.Divider(),
         ft.Column(
             controls=[
+                encabezados,
                 ft.Container(
                     content=lista_libros,
                     expand=True
@@ -186,14 +240,11 @@ def main(page: ft.Page):
         ),
         ft.Row([boton_cargar, boton_cargar_carpeta, btn_add_url], alignment=ft.MainAxisAlignment.END)
     )
-
     
-
     # Actualizar la lista de libros en la interfaz al iniciar
     actualizar_lista_libros(page, lista_libros, libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
-
     # Cerrar la conexión al cerrar la aplicación
     page.on_close = lambda e: conn.close()
 
-# Ejecutar la aplicación
+# Ejecutar la aplicación Flet
 ft.app(target=main)

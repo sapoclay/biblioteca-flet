@@ -21,10 +21,25 @@ def crear_entorno_virtual():
     print("Creando el entorno virtual...")
     subprocess.run([sys.executable, "-m", "venv", VENV_DIR], check=True)
 
+# Instalar pip si no está instalado
+def asegurar_pip(python_executable):
+    try:
+        subprocess.run([python_executable, "-m", "pip", "--version"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError:
+        print("pip no está instalado. Intentando instalar pip manualmente...")
+        try:
+            # Descargar get-pip.py
+            subprocess.run([sys.executable, "-c", "import urllib.request; urllib.request.urlretrieve('https://bootstrap.pypa.io/get-pip.py', 'get-pip.py')"], check=True)
+            # Instalar pip usando get-pip.py
+            subprocess.run([python_executable, "get-pip.py"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"Error al instalar pip manualmente: {e}")
+            raise
+
 # Instalar las dependencias desde requirements.txt
 def instalar_dependencias(python_executable):
     print("Instalando dependencias...")
-    subprocess.run([python_executable, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+    asegurar_pip(python_executable)
     subprocess.run([python_executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
 
 # Comprobar si flet está instalado en el entorno virtual
@@ -69,20 +84,21 @@ def ejecutar_app():
 def main():
     if not entorno_virtual_existe():
         # Si no existe el entorno virtual, crearlo e instalar dependencias
-        mostrar_mensaje("El entorno virtual no existe. Creando uno nuevo...")
+        print("El entorno virtual no existe. Creando uno nuevo...")
         crear_entorno_virtual()
         python_executable = obtener_python_ejecutable()
         instalar_dependencias(python_executable)
     else:
         # Si el entorno virtual ya existe
-        mostrar_mensaje("El entorno virtual ya existe.")
+        print("El entorno virtual ya existe.")
         python_executable = obtener_python_ejecutable()
 
         # Instalar dependencias si no lo hicimos aún y no tenemos flet
         if not flet_instalado(python_executable):
-            mostrar_mensaje("Flet no está instalado. Instalando Flet...")
+            print("Flet no está instalado. Instalando Flet...")
+            asegurar_pip(python_executable)  # Asegura que pip esté disponible
             subprocess.run([python_executable, "-m", "pip", "install", "flet"], check=True)
-            mostrar_mensaje("Flet instalado correctamente.")
+            print("Flet instalado correctamente.")
     
     # Ejecutar la aplicación
     ejecutar_app()
