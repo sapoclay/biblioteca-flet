@@ -13,9 +13,14 @@ from utils import (actualizar_lista_libros, mostrar_mensaje_error,
 from themes import toggle_tema
 from dialog import (mostrar_dialogo_nuevo_libro, mostrar_dialogo_seleccionar_categoria, 
                     manejar_cambio_categoria, procesar_archivo_dialog, mostrar_dialogo_url)
+from systemtray import crear_icono 
 
 # Aplicación de Biblioteca Digital
 def main(page: ft.Page):
+    # Crear el icono de la bandeja en un hilo
+    import threading
+    threading.Thread(target=crear_icono, args=(page,)).start()  # Pasa la página como argumento
+
     # Ruta a la base de datos SQLite
     DB_FILE = "libros.db"
 

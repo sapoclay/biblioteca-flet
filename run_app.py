@@ -19,7 +19,7 @@ def entorno_virtual_existe():
 # Crear el entorno virtual
 def crear_entorno_virtual():
     print("Creando el entorno virtual...")
-    subprocess.run([sys.executable, "-m", "venv", VENV_DIR], check=True)
+    subprocess.run([sys.executable, "-m", "virtualenv", VENV_DIR], check=True)
 
 # Instalar pip si no está instalado
 def asegurar_pip(python_executable):
@@ -80,11 +80,22 @@ def ejecutar_app():
     else:
         print(f"El ejecutable no se encuentra: {python_executable}")
 
+# Comprobar si el paquete python3-virtualenv está instalado
+def verificar_virtualenv_instalado():
+    try:
+        subprocess.run(["dpkg", "-s", "python3-virtualenv"], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
 # Lógica principal
 def main():
     if not entorno_virtual_existe():
         # Si no existe el entorno virtual, crearlo e instalar dependencias
         print("El entorno virtual no existe. Creando uno nuevo...")
+        if not verificar_virtualenv_instalado():
+            print("El paquete python3-virtualenv no está instalado. Por favor, instálalo y vuelve a intentarlo.")
+            sys.exit(1)
         crear_entorno_virtual()
         python_executable = obtener_python_ejecutable()
         instalar_dependencias(python_executable)
