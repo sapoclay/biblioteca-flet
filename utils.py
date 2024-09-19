@@ -260,3 +260,49 @@ def aplicar_categoria_a_libros_con_confirmacion(
             ),
             categorias  # Pasar las categorías disponibles para que el usuario seleccione
         )
+
+    # Función para mostrar el diálogo "About"
+def mostrar_about_dialog(e, page):
+    # Crear contenido del diálogo
+    imagen = ft.Image(src="./resources/Logo.png", width=200, height=200)
+        
+    # Usar un contenedor para centrar la imagen
+    imagen_contenedor = ft.Container(
+        content=imagen,
+        alignment=ft.alignment.center,  # Centramos la imagen
+        padding=20  # Añadimos algo de padding
+    )
+        
+    descripcion = ft.Text(
+        "Biblioteca Digital\nVersión 0.5\nUna aplicación para gestionar tu colección de libros PDF.",
+        size=16,
+        text_align=ft.TextAlign.CENTER  # Centramos el texto también
+    )
+        
+    enlace_github = ft.TextButton(
+        "Repositorio en GitHub", 
+        on_click=lambda _: page.launch_url("https://github.com/sapoclay/biblioteca-flet")
+    )
+        
+    # Crear la función para cerrar el diálogo
+    def cerrar_dialogo(e):
+        about_dialog.open = False
+        page.update()
+
+    # Crear el contenido con scroll y limitar la altura del diálogo
+    content_container = ft.Container(
+        content=ft.Column([imagen_contenedor, descripcion, enlace_github], alignment=ft.MainAxisAlignment.CENTER),
+        height=400,  # Altura máxima del contenido
+          
+    )
+        
+    # Crear y mostrar el diálogo
+    about_dialog = ft.AlertDialog(
+        title=ft.Text("Acerca de la aplicación"),
+        content=content_container,  # Contenedor con scroll
+        actions=[ft.ElevatedButton("Cerrar", on_click=cerrar_dialogo)],  # Usar la función cerrar_dialogo
+        modal=True,
+    )
+    page.overlay.append(about_dialog)
+    about_dialog.open = True
+    page.update()

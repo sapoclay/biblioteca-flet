@@ -8,7 +8,8 @@ from database import (crear_tablas, guardar_libro, guardar_favorito,
 from models import Libro
 from utils import (actualizar_lista_libros, mostrar_mensaje_error, 
                    abrir_libro, buscar_libro, cerrar_dialogo, aplicar_categoria_a_libros,
-                   handle_window_event, create_confirm_dialog, salir_app, aplicar_categoria_a_libros_con_confirmacion)
+                   handle_window_event, create_confirm_dialog, salir_app, aplicar_categoria_a_libros_con_confirmacion,
+                   mostrar_about_dialog)
 from themes import toggle_tema
 from dialog import (mostrar_dialogo_nuevo_libro, mostrar_dialogo_seleccionar_categoria, 
                     manejar_cambio_categoria, procesar_archivo_dialog, mostrar_dialogo_url)
@@ -156,9 +157,6 @@ def main(page: ft.Page):
                 categorias_disponibles
             )
 
-
-
-
     # Crear un FilePicker para seleccionar archivos
     archivo_pdf = ft.FilePicker(on_result=procesar_archivo)
     page.overlay.append(archivo_pdf)
@@ -184,14 +182,14 @@ def main(page: ft.Page):
         icon=ft.icons.ADD_LINK,
         on_click=lambda e: mostrar_dialogo_url(
             page,
-            lista_libros,                 # Debes definir esta variable en el contexto correcto
-            libros,                       # Debes definir esta variable en el contexto correcto
-            favoritos,                    # Debes definir esta variable en el contexto correcto
-            mostrar_favoritos,            # Debes definir esta variable en el contexto correcto
-            abrir_libro,                  # Debes definir esta variable en el contexto correcto
-            toggle_favorito,              # Debes definir esta variable en el contexto correcto
-            eliminar_libro_click_event,   # Debes definir esta variable en el contexto correcto
-            editar_libro                  # Debes definir esta variable en el contexto correcto
+            lista_libros,                 
+            libros,                       
+            favoritos,                    
+            mostrar_favoritos,            
+            abrir_libro,                  
+            toggle_favorito,              
+            eliminar_libro_click_event,   
+            editar_libro                  
         ),
         tooltip="Cargar libros desde URL"
     )    
@@ -201,6 +199,7 @@ def main(page: ft.Page):
     # Crear el menú
     menu = ft.PopupMenuButton(
         items=[
+            ft.PopupMenuItem(text="Acerca de", on_click=lambda e: mostrar_about_dialog(e, page)),
             ft.PopupMenuItem(text="Salir", on_click=lambda _: salir_app(page))
         ]
     )
