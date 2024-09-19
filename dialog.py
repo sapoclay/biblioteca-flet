@@ -11,10 +11,16 @@ def mostrar_dialogo_nuevo_libro(page: ft.Page, titulo: str, ruta: str, categoria
     ruta_texto = ft.Text(f"Ruta: {ruta}", size=14, italic=True)
     
     # Botón de guardar
+    # Función para guardar el nuevo libro y cerrar el diálogo
+    def guardar_y_cerrar(e):
+        guardar_nuevo_libro(titulo, categoria, ruta)
+        cerrar_dialogo(page)
+    
+    # Botón de guardar
     guardar_btn = ft.ElevatedButton(
         text="Guardar", 
-        on_click=lambda _: guardar_nuevo_libro(titulo, categoria, ruta),
-        width=200  # Ancho del botón
+        on_click=guardar_y_cerrar,
+        width=200,  # Ancho del botón
     )
     
     # Botón de cancelar
@@ -221,5 +227,76 @@ def mostrar_dialogo_url(page, lista_libros, libros, favoritos, mostrar_favoritos
     dialog.open = True
     page.update()
 
+def aplicar_categoria_a_libros(libros, categoria):
+    for libro in libros:
+        libro.categoria = categoria  # Asignar la categoría seleccionada a cada libro
 
 
+def mostrar_dialogo_confirmacion_libros(page, libros, guardar_libros, actualizar_lista, categorias):
+    # Crear una lista de controles de libros
+    lista_libros_controls = [ft.Text(f"Título: {libro.titulo}", size=16, weight="bold") for libro in libros]
+    
+    # Crear un contenedor para los libros que permite el desplazamiento
+    contenido_libros = ft.Column(
+        controls=lista_libros_controls,
+        scroll=ft.ScrollMode.AUTO,
+        alignment=ft.MainAxisAlignment.START,
+        expand=True
+    )
+    
+    # Añadir un Dropdown (desplegable) para seleccionar la categoría
+    categoria_dropdown = ft.Dropdown(
+        options=[ft.dropdown.Option(categoria) for categoria in categorias],
+        label="Selecciona una categoría",
+        width=400,
+        value=categorias[0] if categorias else None  # Selecciona la primera categoría por defecto
+    )
+
+    # Botón de guardar
+    guardar_btn = ft.ElevatedButton(
+        text="Aceptar",
+        # Corregido el paso de los argumentos a la lambda
+        on_click=lambda _: [
+            aplicar_categoria_a_libros(libros, categoria_dropdown.value),  # Aplicar la categoría seleccionada
+            guardar_libros(libros), 
+            cerrar_dialogo(page)
+        ],
+        width=200
+    )
+    
+    # Botón de cancelar
+    cancelar_btn = ft.ElevatedButton(
+        text="Cancelar",
+        on_click=lambda e: cerrar_dialogo(page),
+        width=200
+    )
+    
+    # Contenedor para los botones
+    botones_container = ft.Row(
+        controls=[guardar_btn, cancelar_btn],
+        alignment=ft.MainAxisAlignment.CENTER,
+        spacing=20
+    )
+    
+    # Contenedor para el contenido del diálogo
+    content_container = ft.Container(
+        content=ft.Column(
+            controls=[contenido_libros, categoria_dropdown, botones_container],  # Añadir el Dropdown al contenido
+            spacing=20,
+            alignment=ft.MainAxisAlignment.CENTER
+        ),
+        width=500,
+        height=500,  # Ajustado para acomodar el Dropdown
+    )
+    
+    # Crear el diálogo
+    dialogo_confirmacion = ft.AlertDialog(
+        title=ft.Text("Confirma los libros añadidos y selecciona una categoría"),
+        content=content_container,
+        modal=True,
+    )
+       
+    # Añadir el diálogo a la página y mostrarlo
+    page.overlay.append(dialogo_confirmacion)
+    dialogo_confirmacion.open = True
+    page.update()

@@ -200,3 +200,63 @@ def salir_app(page):
 
     confirm_dialog = create_confirm_dialog(page, on_exit)
     page.open(confirm_dialog)
+    
+def aplicar_categoria_a_libros_con_confirmacion(
+    page, carpeta, libros, lista_libros, favoritos, mostrar_favoritos,
+    abrir_libro, toggle_favorito, eliminar_libro, editar_libro, categorias):
+    
+    libros_nuevos = []
+    from database import guardar_libro
+    from dialog import mostrar_dialogo_confirmacion_libros
+
+    # Asegurarse de que carpeta sea una cadena
+    if isinstance(carpeta, Path):
+        carpeta = str(carpeta)
+
+    print(f"Ruta de la carpeta: '{carpeta}'")
+    print(f"Tipo de carpeta: {type(carpeta)}")
+
+    if isinstance(carpeta, str) and os.path.isdir(carpeta):
+        for archivo in os.listdir(carpeta):
+            ruta = os.path.join(carpeta, archivo)
+            if os.path.isfile(ruta) and archivo.lower().endswith('.pdf'):
+                titulo = Path(ruta).stem
+                nuevo_libro = Libro(titulo, None, ruta)  # Dejar la categoría en None inicialmente
+                libros_nuevos.append(nuevo_libro)
+    else:
+        print(f"La ruta {carpeta} no es una carpeta válida.")
+
+    # Si hay nuevos libros, mostrar el diálogo de confirmación con la opción de seleccionar categoría
+    if libros_nuevos:
+        mostrar_dialogo_confirmacion_libros(
+            page,
+            libros_nuevos,
+            # Guardar los libros y actualizar la lista
+            lambda libros: guardar_libro(
+                libros, 
+                lambda: actualizar_lista_libros(
+                    page,
+                    lista_libros,
+                    libros,
+                    favoritos,
+                    mostrar_favoritos,
+                    abrir_libro,
+                    toggle_favorito,
+                    eliminar_libro,
+                    editar_libro
+                )
+            ),
+            # Actualizar la lista de libros en la interfaz si se cancela
+            lambda: actualizar_lista_libros(
+                page,
+                lista_libros,
+                libros,
+                favoritos,
+                mostrar_favoritos,
+                abrir_libro,
+                toggle_favorito,
+                eliminar_libro,
+                editar_libro
+            ),
+            categorias  # Pasar las categorías disponibles para que el usuario seleccione
+        )

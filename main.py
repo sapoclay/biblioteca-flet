@@ -8,7 +8,7 @@ from database import (crear_tablas, guardar_libro, guardar_favorito,
 from models import Libro
 from utils import (actualizar_lista_libros, mostrar_mensaje_error, 
                    abrir_libro, buscar_libro, cerrar_dialogo, aplicar_categoria_a_libros,
-                   handle_window_event, create_confirm_dialog, salir_app)
+                   handle_window_event, create_confirm_dialog, salir_app, aplicar_categoria_a_libros_con_confirmacion)
 from themes import toggle_tema
 from dialog import (mostrar_dialogo_nuevo_libro, mostrar_dialogo_seleccionar_categoria, 
                     manejar_cambio_categoria, procesar_archivo_dialog, mostrar_dialogo_url)
@@ -44,11 +44,24 @@ def main(page: ft.Page):
     # Función para guardar el nuevo libro
     def guardar_nuevo_libro(titulo, categoria, ruta):
         nuevo_libro = Libro(titulo, categoria, ruta)
-        libros.append(nuevo_libro)
-        guardar_libro(nuevo_libro)
-        actualizar_lista_libros(page, lista_libros, libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
-        cerrar_dialogo(page)
-        page.update()
+        
+        # Añadir log para ver el libro que se intenta guardar
+        print(f"Guardando libro: Título: {titulo}, Categoría: {categoria}, Ruta: {ruta}")
+        
+        # Guardar en la base de datos
+        try:
+            guardar_libro(nuevo_libro)  # Asegúrate de que el método `guardar_libro` funcione correctamente en la base de datos
+            
+            # Añadir el libro a la lista en memoria
+            libros.append(nuevo_libro)
+            
+            # Actualizar la lista de libros en la interfaz
+            actualizar_lista_libros(page, lista_libros, libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
+            page.update()
+
+        except Exception as e:
+            print(f"Error al guardar libro en la base de datos: {e}")
+
 
     # Función para añadir o quitar de favoritos
     def toggle_favorito(libro):
@@ -123,15 +136,26 @@ def main(page: ft.Page):
                     mostrar_dialogo_nuevo_libro(page, titulo, ruta, "", guardar_nuevo_libro)
         else:
             print("No se seleccionaron archivos")
-
+    
     def procesar_carpeta(e: ft.FilePickerResultEvent):
-        if e.path:  # Verifica si se seleccionó una carpeta
+        if e.path:
             carpeta = Path(e.path)
-            # Procesa todos los archivos PDF en la carpeta
-            for archivo in carpeta.glob('*.pdf'):
-                titulo = archivo.stem
-                print(f"Procesando archivo: {archivo}")  # Añadir un log para ver si se están procesando todos los archivos
-                mostrar_dialogo_seleccionar_categoria(page, carpeta, libros, lista_libros, favoritos, mostrar_favoritos, abrir_libro, toggle_favorito, eliminar_libro_click_event, editar_libro)
+            print(f"Ruta obtenida del selector de archivos: '{carpeta}'")
+            categorias_disponibles = ["Documentación", "Documentación oficial", "Manual", "Tecnología", "Ciencia", "Filosofía", "Historia"]
+            aplicar_categoria_a_libros_con_confirmacion(
+                page,
+                carpeta,
+                libros,
+                lista_libros,
+                favoritos,
+                mostrar_favoritos,
+                abrir_libro,
+                toggle_favorito,
+                eliminar_libro,
+                editar_libro,
+                categorias_disponibles
+            )
+
 
 
 

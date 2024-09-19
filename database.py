@@ -72,18 +72,30 @@ def cargar_datos(libros, favoritos):
         if conexion:
             conexion.close()
 
-# Guardar libro único añadido por usuario
-def guardar_libro(libro):
+def guardar_libro(libros, actualizar_lista=None):
+    # Si 'libros' no es una lista, lo convertimos en una lista
+    if not isinstance(libros, list):
+        libros = [libros]
+    
+    for libro in libros:
+        guardar_un_libro(libro)
+    
+    # Actualizar la lista de libros en la interfaz si se pasa la función
+    if actualizar_lista:
+        actualizar_lista()
+
+
+def guardar_un_libro(libro):
     try:
         # Conectar a la base de datos
         conexion = conectar_db()
         cursor = conexion.cursor()
-        
+
         # Insertar el libro en la base de datos
         cursor.execute('INSERT INTO libros (titulo, categoria, ruta) VALUES (?, ?, ?)',
                        (libro.titulo, libro.categoria, libro.ruta))
         conexion.commit()
-        
+
         # Verificación después de guardar
         cursor.execute('SELECT id, titulo, categoria, ruta FROM libros WHERE ruta=?', (libro.ruta,))
         row = cursor.fetchone()
@@ -101,6 +113,8 @@ def guardar_libro(libro):
         # Cerrar la conexión a la base de datos
         if conexion:
             conexion.close()
+
+            
             
 # Guardar o eliminar un libro de los favoritos en la base de datos
 def guardar_favorito(libro):
